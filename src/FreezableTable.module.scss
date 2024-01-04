@@ -1,0 +1,41 @@
+.FreezableTableColumn {
+  display: flex;
+  flex-direction: column;
+  margin: 0px;
+  padding: 0px;
+  max-width: 100%;
+  width: 100%;
+  overflow: hidden;
+  max-height: 100%;
+
+  .FreezableTable {
+    display: flex;
+    flex-direction: row;
+    margin: 0px;
+    padding: 0px;
+    max-width: 100%;
+    width: 100%;
+    tr {
+      .Cell {
+        margin: 0px;
+        padding: 0px;
+        text-align: left;
+        vertical-align: top;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        box-sizing: border-box;
+
+        &.Head {
+          text-wrap: nowrap;
+        }
+      }
+    }
+  }
+
+  div,
+  table {
+    margin: 0px;
+    padding: 0px;
+    table-layout: fixed;
+  }
+}
