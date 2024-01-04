@@ -1,16 +1,20 @@
 {
-  "name": "@cradlesoft/freezable-react-table",
-  "description": "implements a react table with support for freezing of columns and rows",
+  "name": "@cradlesoft/advanced-react-table",
+  "description": "Implements a react table with support for freezing of columns and rows",
   "keywords": [
     "react",
     "table",
-    "freeze"
+    "freeze rows",
+    "freeze columns"
   ],
   "license": "ISC",
   "private": false,
-  "version": "1.0.27",
+  "version": "1.0.1",
   "type": "module",
   "types": "dist",
+  "repository": {
+    "url": "https://github.com/koladei/advanced-react-table.git"
+  },
   "author": {
     "name": "Kolade Ige",
     "email": "kolade.ige@gmail.com"
