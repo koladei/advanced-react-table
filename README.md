@@ -4,10 +4,11 @@ A react table with support for freezing columns and rows.
 
 ![Sample](./docs/sample.png)
 
-INSTALLATION
+# INSTALLATION
+
 On node command line type: `npm i @cradlesoft/advanced-react-table` to install
 
-USAGE
+# USAGE
 
 ```jsx
 import * as React from "react";
@@ -117,4 +118,20 @@ function App() {
 export default App;
 ```
 
-OPTIONS
+Checkout the full sample code in [codesandbox](https://codesandbox.io/embed/react-compiler-forked-c46lz4?fontsize=14&hidenavigation=1&theme=dark)
+
+# OPTIONS
+
+| Name                | Type                | Default Value | Description                                                          |
+| ------------------- | ------------------- | ------------- | -------------------------------------------------------------------- |
+| hideColumnHeaders   | boolean             | false         | If true, column headers will not be renadered                        |
+| freezeColumnHeaders | boolean             | false         | If true, the row containing the column headers should be frozen.     |
+| freezeFirstColumn   | boolean             | false         | If true the first column will be frozen.                             |
+| freezeRows          | number              | 0             | The number of rows to freeze in addition to the column header row    |
+| freezeColumns       | number              | 0             | The number of columns to freeze                                      |
+| headerRowStyle      | React.CSSProperties | false         | CSS style that will be applied to each table cell in the header row. |
+| cellStyle           | React.CSSProperties | false         | CSS style that will be applied to other cells in the table.          |
+| cellClass           | string              | false         | CSS class that will be added to each cell in the header row.         |
+| headerRowClass      | string              | false         | CSS class that will be added to other cells in the table.            |
+| columns             | object array        | []            | An array of objects describing the columns of the table.             |
+| row                 | object array        | []            | An array of objects containing the actual records of the table.      |
