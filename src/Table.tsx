@@ -1,5 +1,5 @@
 import { useRef, CSSProperties, useState, useEffect, Fragment } from 'react';
-import styles from "./FreezableTable.module.scss"
+import styles from "./Table.module.scss"
 import classNames from 'classnames';
 
 type Column = {
@@ -20,9 +20,12 @@ type TableProps = {
   freezeFirstColumn?: boolean,
   headerRowStyle?: CSSProperties;
   cellStyle?: CSSProperties;
+  cellClass?: string;
+  headerRowClass?: string;
+  blankCellValue?: string
 }
 
-const FreezableTable = ({
+const Table = ({
   freezeRows = 0,
   freezeColumns = 0,
   rows = [],
@@ -30,11 +33,12 @@ const FreezableTable = ({
   hideColumnHeaders = false,
   freezeColumnHeaders = false,
   freezeFirstColumn = false,
-  headerRowStyle = { textWrap: "nowrap" },
-  cellStyle = { textWrap: "inherit" }
+  headerRowStyle = {},
+  cellStyle = {},
+  cellClass = '',
+  headerRowClass = '',
+  blankCellValue = '-'
 }: TableProps) => {
-
-  const refs = useRef([])
 
   // refs
   const topRef = useRef(null);
@@ -84,7 +88,7 @@ const FreezableTable = ({
     ...rows?.map((row: any) => {
       let cells: any[] = []
       cols.forEach((col: Column) => {
-        cells = [...cells, { content: row[col.id] }];
+        cells = [...cells, { content: row[col.id] || <>{blankCellValue}</>, columnId: col.id }];
       });
 
       return cells;
@@ -93,7 +97,6 @@ const FreezableTable = ({
   const [rowHeights, setRowHeights] = useState<{ height: number }[]>([]);
   const [colWidths, setColWidths] = useState<{ width: number }[]>([]);
   const [t3Width, setT3Width] = useState<string | number>("auto");
-  const [t4Width, setT4Width] = useState<string | number>("100%");
   const [frozenColumns, setFrozenColumns] = useState<number>(freezeColumns);
   const [frozenRows, setFrozenRows] = useState<number>(freezeRows);
 
@@ -102,20 +105,21 @@ const FreezableTable = ({
     if (t1Ref?.current) setT3Width((t1Ref?.current as any)?.getBoundingClientRect()?.width)
   }, [t1Ref?.current?.["clientWidth"]])
 
-  // ensure tde width of t2 and t4 are synced
   useEffect(() => {
-    if (t2Ref?.current) setT4Width(t2Ref?.current?.["clientWidth"])
-  }, [t2Ref?.current?.["clientWidth"]])
-
-  useEffect(() => {
-    if (freezeColumnHeaders)
+    if (freezeColumnHeaders) {
       setFrozenRows(freezeRows + 1)
-  }, [freezeColumnHeaders])
+    } else {
+      setFrozenRows(freezeRows)
+    }
+  }, [freezeColumnHeaders, freezeRows])
 
   useEffect(() => {
-    if (freezeFirstColumn)
+    if (freezeFirstColumn) {
       setFrozenColumns(freezeColumns + 1)
-  }, [freezeFirstColumn])
+    } else {
+      setFrozenColumns(freezeColumns)
+    }
+  }, [freezeFirstColumn, freezeColumns])
 
   function processRow(ref: any, rowIndex: number) {
     const height = ref?.offsetHeight;
@@ -155,13 +159,13 @@ const FreezableTable = ({
 
   return (
     <Fragment>
-      <div className={classNames(styles.FreezableTableColumn)} ref={topRef}>
+      <div className={classNames(styles.Table)} ref={topRef}>
         {
           frozenRows > 0 &&
-          <div className={classNames(styles.FreezableTable)}>
+          <div className={classNames(styles.TableRow, styles.Row1)}>
             {
               frozenColumns > 0 &&
-              <table className='T1' cellPadding={0} cellSpacing={0} ref={t1Ref} style={{ margin: 0 }}>
+              <table className={classNames('T1', styles.T1)} cellPadding={0} cellSpacing={0} ref={t1Ref} style={{ margin: 0 }}>
                 <tbody>
                   {
                     data
@@ -169,10 +173,6 @@ const FreezableTable = ({
                       ?.map((r: any, rowIndex: number) => (
                         <tr
                           key={rowIndex}
-                          style={{
-                            // height: rowHeights?.[rowIndex]?.height || "auto",
-                            // minHeight: rowHeights?.[rowIndex]?.height || "auto"
-                          }}
                           ref={(ref) => {
                             processRow(ref, rowIndex);
                           }}
@@ -184,12 +184,12 @@ const FreezableTable = ({
                                 const width = cols?.[columnIndex].width || "auto"
                                 return <td
                                   key={columnIndex}
-                                  className={classNames(styles.Cell, styles.Head)}
+                                  className={classNames(styles.Cell, styles.Head, headerRowClass)}
                                   style={{
                                     ...headerRowStyle,
                                     width,
                                     minWidth: width,
-                                    maxWidth: `${topRef?.current?.getBoundingClientRect()?.width * 0.75}px`,
+                                    ...(topRef?.current ? { maxWidth: `${(topRef.current as any).getBoundingClientRect()?.width * 0.75}px` } : {}),
                                   }}
                                   ref={(ref) => {
                                     if (ref && rowIndex == 0)
@@ -204,8 +204,21 @@ const FreezableTable = ({
                 </tbody>
               </table>
             }
-            <div style={{ overflow: "hidden", maxWidth: `calc(100% - ${t3Width}px)` }} ref={t2ContainerRef}>
-              <table className='T2' cellPadding={0} cellSpacing={0} >
+            <div className={classNames(styles.T2Container)} style={
+              {
+                overflow: "hidden", display: "flex",
+                ...(
+                  t1Ref?.current ?
+                    {
+                      width: `calc(100% - ${(t1Ref.current as any).getBoundingClientRect()?.width || 0}px)`,
+                      maxWidth: `calc(100% - ${(t1Ref.current as any).getBoundingClientRect()?.width || 0}px)`,
+                      minWidth: `calc(100% - ${(t1Ref.current as any).getBoundingClientRect()?.width || 0}px)`,
+                    } :
+                    { width: "auto" }
+                )
+              }
+            } ref={t2ContainerRef}>
+              <table className={classNames('T2', styles.T2)} cellPadding={0} cellSpacing={0} >
                 <tbody>
                   {
                     data
@@ -213,10 +226,6 @@ const FreezableTable = ({
                       ?.map((r: any, rowIndex: number) =>
                         <tr
                           key={rowIndex}
-                          style={{
-                            // height: rowHeights?.[rowIndex]?.height || "auto",
-                            // minHeight: rowHeights?.[rowIndex]?.height || "auto"
-                          }}
                           ref={(ref) => {
                             processRow(ref, rowIndex);
                           }}
@@ -224,15 +233,15 @@ const FreezableTable = ({
                           {
                             r?.filter((_r: any[], columnIndex: number) => columnIndex >= frozenColumns)?.map((c: any, columnIndex: number) => {
 
-                              // const width = cols?.[columnIndex + frozenColumns]?.width || "auto"
+                              const width = cols?.[columnIndex + frozenColumns]?.width || "auto"
 
                               return <td
                                 key={columnIndex}
-                                className={classNames(styles.Cell, styles.Head)}
+                                className={classNames(styles.Cell, styles.Head, headerRowClass)}
                                 style={{
                                   ...headerRowStyle,
-                                  // width,
-                                  // minWidth: width
+                                  width,
+                                  minWidth: width
                                 }}
                                 ref={(ref) => {
                                   if (ref?.style && rowIndex == 0) {
@@ -249,8 +258,8 @@ const FreezableTable = ({
             </div>
           </div>
         }
-        <div className={classNames(styles.FreezableTable)} style={{ overflowY: "scroll", padding: 0, margin: 0, maxHeight: `calc(100% - ${(topRef?.current as any)?.clientdeight || 0}px)` }}>
-          <table className='T3' cellPadding={0} cellSpacing={0} ref={t3Ref} style={{ minWidth: (t3Width || "auto"), maxWidth: (t3Width || "auto"), margin: 0 }}>
+        <div className={classNames(styles.TableRow, styles.Row2)} style={{ maxHeight: `calc(100% - ${(topRef?.current as any)?.getBoundingClientRect().height || 0}px)` }}>
+          <table className={classNames('T3', styles.T3)} cellPadding={0} cellSpacing={0} ref={t3Ref} style={{ minWidth: (t3Width || "auto"), maxWidth: (t3Width || "auto") }}>
             <tbody>
               {
                 data
@@ -259,8 +268,7 @@ const FreezableTable = ({
                     <tr
                       key={rowIndex}
                       style={{
-                        height: rowHeights?.[rowIndex + frozenRows]?.height || "auto",
-                        // minHeight: rowHeights?.[rowIndex + frozenRows]?.height || "auto"
+                        height: rowHeights?.[rowIndex + frozenRows]?.height || "auto"
                       }}
                       ref={(ref) => {
                         processRow(ref, rowIndex + frozenRows);
@@ -269,20 +277,21 @@ const FreezableTable = ({
                       {
                         r.filter((_r: any[], i: number) => i < frozenColumns).map((c: any, columnIndex: number) => {
 
-                          const width = colWidths?.[columnIndex]?.width;
+                          const width = (frozenRows == 0 ? cols?.[columnIndex].width : colWidths?.[columnIndex]?.width) || "auto";
                           return (
                             <td
                               key={columnIndex}
-                              className={styles.Cell}
+                              className={classNames(styles.Cell, cellClass)}
                               style={{
                                 overflow: "hidden",
                                 ...cellStyle,
                                 minWidth: width,
-                                maxWidth: `${topRef?.current?.getBoundingClientRect()?.width * 0.5}px`,
-                                width: width
-                              }}
-                              ref={(_ref) => {
-                                // processColumnRef(ref, columnIndex);
+                                ...(topRef?.current ? { maxWidth: `${(topRef.current as any).getBoundingClientRect()?.width * 0.5}px` } : {}),
+                                ...(width ? { width: width, } : {}),
+                                ...{
+                                  ["--column-index"]: columnIndex,
+                                  ["--column-id"]: c.columnId || "auto"
+                                }
                               }}
                             >{c.content}</td>
                           )
@@ -295,8 +304,32 @@ const FreezableTable = ({
           </table>
           {
             data?.length > frozenRows &&
-            <div style={{ overflow: "hidden", overflowX: "scroll", height: `100%`, width: `calc(100% - ${t3Width}px)` }} onScroll={handleHorizontalScroll}>
-              <table className='T4' cellPadding={0} cellSpacing={0} style={{ minWidth: (t4Width || "100%"), width: (t4Width || "100%") }}>
+            <div className={styles.T4Container} style={{
+              ...(
+                t1Ref?.current ?
+                  {
+                    width: `calc(100% - ${(t1Ref.current as any).getBoundingClientRect()?.width || 0}px)`,
+                    maxWidth: `calc(100% - ${(t1Ref.current as any).getBoundingClientRect()?.width || 0}px)`,
+                    minWidth: `calc(100% - ${(t1Ref.current as any).getBoundingClientRect()?.width || 0}px)`,
+                  } :
+                  (
+                    t3Ref?.current ?
+                      {
+                        width: `calc(100% - ${(t3Ref.current as any).getBoundingClientRect()?.width || 0}px)`,
+                        maxWidth: `calc(100% - ${(t3Ref.current as any).getBoundingClientRect()?.width || 0}px)`,
+                        minWidth: `calc(100% - ${(t3Ref.current as any).getBoundingClientRect()?.width || 0}px)`,
+                      } :
+                      { width: "auto" }
+                  )
+              )
+            }} onScroll={handleHorizontalScroll}>
+              <table className={classNames('T4', styles.T4)} cellPadding={0} cellSpacing={0} style={{
+                ...(t2Ref?.current ? {
+                  width: (t2Ref.current as any).getBoundingClientRect().width,
+                  maxWidth: (t2Ref.current as any).getBoundingClientRect().width,
+                  minWidth: (t2Ref.current as any).getBoundingClientRect().width,
+                } : {})
+              }}>
                 <tbody>
                   {
                     data
@@ -315,22 +348,26 @@ const FreezableTable = ({
                             r
                               ?.filter((_r: any[], columnIndex: number) => columnIndex >= frozenColumns)
                               ?.map((c: any, columnIndex: number) => {
+                                const w = (frozenRows == 0 ? cols?.[columnIndex + frozenColumns].width : colWidths?.[columnIndex + frozenColumns]?.width) || "auto";
+
                                 const width = rowIndex == 0 ? {
-                                  width: colWidths?.[columnIndex + frozenColumns]?.width || "auto",
-                                  minWidth: colWidths?.[columnIndex + freezeColumns]?.width || "auto",
-                                  ["--column-index"]: columnIndex + frozenColumns,
-                                  ["--width"]: colWidths?.[columnIndex + frozenColumns]?.width || "auto"
+                                  width: w,
+                                  minWidth: w
                                 } : {};
 
                                 return (
                                   <td
                                     key={columnIndex}
-                                    className={styles.Cell}
+                                    className={classNames(styles.Cell, cellClass)}
                                     style={{
                                       ...width,
-                                      ...((rowIndex == 0 && freezeRows == 0) ? headerRowStyle : cellStyle),
+                                      ...((rowIndex == 0 && frozenRows == 0) ? headerRowStyle : cellStyle),
+                                      ...{
+                                        ["--column-index"]: columnIndex + frozenColumns,
+                                        ["--column-id"]: c.columnId || "auto"
+                                      }
                                     }}
-                                  >{frozenColumns} - {rowIndex} - {c.content}</td>
+                                  >{c.content}</td>
                                 )
                               })
                           }
@@ -347,4 +384,4 @@ const FreezableTable = ({
   )
 }
 
-export default FreezableTable;
+export default Table;

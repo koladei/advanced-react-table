@@ -1,3 +1,3 @@
-import FreezableTable from "./FreezableTable";
+import Table from "./Table";
 
-export default FreezableTable;
+export default Table;

@@ -9,8 +9,8 @@ export default defineConfig({
   build: {
     lib: {
       entry: path.resolve(__dirname, "src", "index.ts"),
-      name: "FreezableTable",
-      fileName: "FreezableTable",
+      name: "Table",
+      fileName: "Table",
     }
   }
 });

@@ -1,0 +1,93 @@
+.Table {
+  display: flex;
+  flex-direction: column;
+  margin: 0px;
+  padding: 0px;
+  max-width: 100%;
+  width: 100%;
+  min-width: 100%;
+  overflow: hidden;
+  max-height: 100%;
+
+  .TableRow {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    margin: 0px;
+    padding: 0px;
+    max-width: 100%;
+    min-width: 100%;
+    width: 100%;
+    text-overflow: ellipsis;
+
+    &.Row1 {
+      .T1 {
+        width: fit-content;
+      }
+
+      .T2Container {
+        display: flex;
+        flex-shrink: 0;
+        flex-grow: 1;
+        overflow: hidden;
+
+        .T2 {
+          flex-shrink: 0;
+          flex-grow: 1;
+        }
+      }
+    }
+
+    &.Row2 {
+      overflow: hidden;
+      overflow-y: scroll;
+      padding: 0px;
+      margin: 0px;
+
+      .T3 {
+        margin: 0px;
+        width: fit-content;
+      }
+
+      .T4Container {
+        display: flex;
+        flex-shrink: 0;
+        flex-grow: 1;
+        overflow: hidden;
+        overflow-x: scroll;
+        height: 100%;
+
+        .T4 {
+          flex-shrink: 0;
+          flex-grow: 1;
+        }
+      }
+    }
+  }
+
+  .T1,
+  .T2,
+  .T3,
+  .T4 {
+    margin: 0px;
+    padding: 0px;
+    table-layout: fixed;
+
+    tr {
+      .Cell {
+        margin: 0px;
+        padding: 0px;
+        text-align: left;
+        vertical-align: top;
+        text-overflow: ellipsis;
+        box-sizing: border-box !important;
+
+        &.Head {
+          text-overflow: ellipsis;
+          box-sizing: border-box !important;
+          // text-wrap: wrap;
+        }
+      }
+    }
+  }
+}
