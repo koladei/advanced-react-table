@@ -6,86 +6,82 @@ import rows from "./sample.json"
 function App() {
   const columns = [
     {
-      width: 30,
+      width: 100,
       id: "Column1",
-      title: " "
+      title: "Column A"
     },
     {
       width: 100,
       id: "Column2",
-      title: "A"
+      title: "Column B"
     },
     {
       width: 100,
       id: "Column3",
-      title: "B"
+      title: "Column C"
     },
     {
       width: 100,
       id: "Column4",
-      title: "C"
+      title: "Column D"
     },
     {
-      width: 100,
+      width: 200,
       id: "Column5",
-      title: "D"
+      title: "Column E"
     },
     {
       width: 200,
       id: "Column6",
-      title: "E"
+      title: "Column F"
     },
     {
       width: 200,
       id: "Column7",
-      title: "F"
+      title: "Column G"
     },
     {
       width: 200,
       id: "Column8",
-      title: "G"
+      title: "Column H"
     },
     {
-      width: 200,
+      width: 300,
       id: "Column9",
-      title: "H"
+      title: "Column I"
     },
     {
-      width: 300,
+      width: 200,
       id: "Column10",
-      title: "I"
+      title: "Column J"
     },
     {
       width: 200,
-      id: "Column4",
-      title: "J"
-    },
-    {
-      width: 200,
-      id: "Column4",
-      title: "K"
+      id: "Column11",
+      title: "Column K"
     },
     {
       width: 300,
-      id: "Column4",
-      title: "L"
+      id: "Column12",
+      title: "Column L"
     },
     {
       width: 200,
-      id: "Column4",
-      title: "M"
+      id: "Column13",
+      title: "Column M"
     },
     {
       width: 300,
-      id: "Column4",
-      title: "N"
+      id: "Column14",
+      title: "Column N"
     }
   ];
 
   return (
     <div className={styles.App}>
       <Table
-        // hideColumnHeaders
+        hideColumnHeaders
+        // showColumnAndRowLabels
         freezeColumnHeaders
         freezeFirstColumn
         freezeRows={0}

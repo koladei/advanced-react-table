@@ -22,7 +22,24 @@ type TableProps = {
   cellStyle?: CSSProperties;
   cellClass?: string;
   headerRowClass?: string;
-  blankCellValue?: string
+  blankCellValue?: string;
+  showColumnAndRowLabels?: boolean;
+  prefferedRowLabelWidth?: number;
+  prefferedColumnLabelHeight: number;
+  allowResize?: boolean;
+  onColumnChanged?: (column: Column, columns?: Column[]) => void
+}
+
+function letterSequence() {
+  let currentLetter = 'A'.charCodeAt(0); // Start with ASCII code for 'A'
+
+  return {
+    next() {
+      const letter = String.fromCharCode(currentLetter); // Convert ASCII code to letter
+      currentLetter++; // Increment for the next letter
+      return letter;
+    }
+  };
 }
 
 const Table = ({
@@ -37,7 +54,10 @@ const Table = ({
   cellStyle = {},
   cellClass = '',
   headerRowClass = '',
-  blankCellValue = '-'
+  blankCellValue = '-',
+  showColumnAndRowLabels = false,
+  prefferedColumnLabelHeight = 40,
+  prefferedRowLabelWidth = 40
 }: TableProps) => {
 
   // refs
@@ -50,30 +70,47 @@ const Table = ({
 
   const t3Ref = useRef(null);
 
+  const [rowHeights, setRowHeights] = useState<{ height: number }[]>([]);
+  const [colWidths, setColWidths] = useState<{ width: number }[]>([]);
+  const [t3Width, setT3Width] = useState<string | number>("auto");
+  const [frozenColumns, setFrozenColumns] = useState<number>(freezeColumns);
+  const [frozenRows, setFrozenRows] = useState<number>(freezeRows);
+  const [cols, setCols] = useState<Column[]>([]);
+  const [columnLabels, setColumnLabels] = useState<string[]>([]);
 
-  const cols: Column[] = (columns.length > 0 ? columns : Object.values(rows.reduce((al: any, cu: any) => {
-    al = { ...al, ...Object.keys(cu) }
-    return al;
-  }, {}))).map((col: Column | any, i) => {
 
-    if (typeof col == "string") {
+  useEffect(() => {
+
+    const letterGenerator = letterSequence();
+    const colLabels: string[] = [];
+    setCols((columns.length > 0 ? columns : Object.values(rows.reduce((al: any, cu: any) => {
+      al = { ...al, ...Object.keys(cu) }
+      return al;
+    }, {}))).map((col: Column | any, i) => {
+
+      colLabels.push(letterGenerator.next());
+
+      if (typeof col == "string") {
+        return {
+          order: i,
+          title: col,
+          id: col,
+          visible: true,
+          width: "auto"
+        }
+      }
+
       return {
         order: i,
-        title: col,
-        id: col,
-        visible: true,
-        width: "auto"
+        title: col?.title || col?.id,
+        id: col?.id || col?.title,
+        visible: col?.visible != undefined ? col?.visible : true,
+        width: col?.width || "auto"
       }
-    }
+    }));
 
-    return {
-      order: i,
-      title: col?.title || col?.id,
-      id: col?.id || col?.title,
-      visible: col?.visible != undefined ? col?.visible : true,
-      width: col?.width || "auto"
-    }
-  });
+    setColumnLabels(colLabels);
+  }, [columns, columns?.length, rows, rows?.length]);
 
 
   const data = [
@@ -94,32 +131,25 @@ const Table = ({
       return cells;
     })];
 
-  const [rowHeights, setRowHeights] = useState<{ height: number }[]>([]);
-  const [colWidths, setColWidths] = useState<{ width: number }[]>([]);
-  const [t3Width, setT3Width] = useState<string | number>("auto");
-  const [frozenColumns, setFrozenColumns] = useState<number>(freezeColumns);
-  const [frozenRows, setFrozenRows] = useState<number>(freezeRows);
-
   // ensure tde width of t1 and t3 are synced
   useEffect(() => {
     if (t1Ref?.current) setT3Width((t1Ref?.current as any)?.getBoundingClientRect()?.width)
   }, [t1Ref?.current?.["clientWidth"]])
 
+  const shift: number = showColumnAndRowLabels ? 1 : 0;
   useEffect(() => {
-    if (freezeColumnHeaders) {
-      setFrozenRows(freezeRows + 1)
-    } else {
-      setFrozenRows(freezeRows)
-    }
-  }, [freezeColumnHeaders, freezeRows])
+    const _one = (freezeColumnHeaders ? 1 : 0) + shift;
+    setFrozenRows(freezeRows + _one)
+
+  }, [freezeColumnHeaders, freezeRows, showColumnAndRowLabels, shift])
 
   useEffect(() => {
-    if (freezeFirstColumn) {
-      setFrozenColumns(freezeColumns + 1)
-    } else {
-      setFrozenColumns(freezeColumns)
-    }
-  }, [freezeFirstColumn, freezeColumns])
+    const _one = (freezeFirstColumn ? 1 : 0) + shift;
+
+    setFrozenColumns(freezeColumns + _one)
+
+  }, [freezeFirstColumn, freezeColumns, showColumnAndRowLabels, shift])
+
 
   function processRow(ref: any, rowIndex: number) {
     const height = ref?.offsetHeight;
@@ -157,49 +187,107 @@ const Table = ({
     }
   };
 
+  const actualFrozenRows = frozenRows - shift;
+  const actualFrozenColumns = frozenColumns - shift;
+
   return (
     <Fragment>
       <div className={classNames(styles.Table)} ref={topRef}>
         {
-          frozenRows > 0 &&
+          (frozenRows > 0 || showColumnAndRowLabels) &&
           <div className={classNames(styles.TableRow, styles.Row1)}>
             {
-              frozenColumns > 0 &&
+              (frozenColumns > 0 || showColumnAndRowLabels) &&
               <table className={classNames('T1', styles.T1)} cellPadding={0} cellSpacing={0} ref={t1Ref} style={{ margin: 0 }}>
                 <tbody>
                   {
+                    showColumnAndRowLabels &&
+                    <tr key={`row--${- 1}`}>
+                      <td
+                        className={classNames(styles.Cell, styles.Head, headerRowClass)}
+                        style={{
+                          ...headerRowStyle,
+                          width: prefferedRowLabelWidth,
+                          minWidth: prefferedRowLabelWidth,
+                          height: prefferedColumnLabelHeight
+                        }}
+                      ></td>
+                      {
+                        columnLabels
+                          ?.filter((_r, columnIndex: number) => columnIndex < (actualFrozenColumns))
+                          ?.map((_c, columnIndex: number) => {
+                            const width = cols?.[columnIndex]?.width || "auto"
+
+                            return <td
+                              key={columnIndex}
+                              className={classNames(styles.Cell, styles.Head, headerRowClass)}
+                              style={{
+                                ...headerRowStyle,
+                                width,
+                                minWidth: width
+                              }}
+
+                              ref={(ref) => {
+                                if (ref?.style && !((actualFrozenRows) > 0)) {
+                                  processColumn(ref, columnIndex + actualFrozenColumns);
+                                }
+                              }}
+                            >{_c}</td>
+                          })
+                      }
+                    </tr>
+                  }
+                  {
                     data
-                      ?.filter((_r: any[], rowIndex: number) => rowIndex < frozenRows)
-                      ?.map((r: any, rowIndex: number) => (
-                        <tr
-                          key={rowIndex}
-                          ref={(ref) => {
-                            processRow(ref, rowIndex);
-                          }}
-                        >
-                          {
-                            r
-                              ?.filter((_r: any[], columnIndex: number) => columnIndex < frozenColumns)
-                              ?.map((c: any, columnIndex: number) => {
-                                const width = cols?.[columnIndex].width || "auto"
-                                return <td
-                                  key={columnIndex}
-                                  className={classNames(styles.Cell, styles.Head, headerRowClass)}
-                                  style={{
-                                    ...headerRowStyle,
-                                    width,
-                                    minWidth: width,
-                                    ...(topRef?.current ? { maxWidth: `${(topRef.current as any).getBoundingClientRect()?.width * 0.75}px` } : {}),
-                                  }}
-                                  ref={(ref) => {
-                                    if (ref && rowIndex == 0)
-                                      processColumn(ref, columnIndex);
-                                  }}
-                                >{c.content}</td>
-                              })
-                          }
-                        </tr>
-                      ))
+                      ?.filter((_r: any[], rowIndex: number) => rowIndex < (actualFrozenRows))
+                      ?.map((r: any, rowIndex: number) => {
+                        return (
+                          <tr
+                            key={`row--${rowIndex}`}
+                            ref={(ref) => {
+                              processRow(ref, rowIndex);
+                            }}
+                            style={{
+                              height: rowHeights?.[rowIndex]?.height || "auto",
+                            }}
+                          >
+
+                            {/* print the row label */}
+                            {
+                              showColumnAndRowLabels && <td
+                                className={classNames(styles.Cell, styles.Head, headerRowClass)}
+                                style={{
+                                  ...headerRowStyle,
+                                  textAlign: "center",
+                                  verticalAlign: "middle",
+                                }}>{rowIndex + 1}</td>
+                            }
+
+
+                            {
+                              r
+                                ?.filter((_r: any[], columnIndex: number) => columnIndex < frozenColumns)
+                                ?.map((c: any, columnIndex: number) => {
+                                  const width = cols?.[columnIndex].width || "auto"
+                                  return <td
+                                    key={columnIndex}
+                                    className={classNames(styles.Cell, styles.Head, headerRowClass)}
+                                    style={{
+                                      ...headerRowStyle,
+                                      width,
+                                      minWidth: width,
+                                      ...(topRef?.current ? { maxWidth: `${(topRef.current as any).getBoundingClientRect()?.width * 0.75}px` } : {}),
+                                    }}
+                                    ref={(ref) => {
+                                      if (ref && rowIndex == 0)
+                                        processColumn(ref, columnIndex);
+                                    }}
+                                  >{c.content}</td>
+                                })
+                            }
+                          </tr>
+                        )
+                      })
                   }
                 </tbody>
               </table>
@@ -221,37 +309,67 @@ const Table = ({
               <table className={classNames('T2', styles.T2)} cellPadding={0} cellSpacing={0} >
                 <tbody>
                   {
+                    showColumnAndRowLabels &&
+                    <tr key={`row--${- 1}`}>
+                      {
+                        columnLabels
+                          ?.filter((_r, columnIndex: number) => columnIndex >= actualFrozenColumns)
+                          ?.map((_c, columnIndex: number) => {
+                            const width = cols?.[columnIndex]?.width || "auto"
+
+                            return <td
+                              key={columnIndex}
+                              className={classNames(styles.Cell, styles.Head, headerRowClass)}
+                              style={{
+                                ...headerRowStyle,
+                                width,
+                                minWidth: width,
+                                height: prefferedColumnLabelHeight
+                              }}
+                              ref={(ref) => {
+                                if (ref?.style && !((actualFrozenRows) > 0)) {
+                                  processColumn(ref, columnIndex + frozenColumns);
+                                }
+                              }}
+                            >{_c}</td>
+                          })
+                      }
+                    </tr>
+                  }
+                  {
                     data
-                      ?.filter((_r: any[], rowIndex: number) => rowIndex < frozenRows)
+                      ?.filter((_r: any[], rowIndex: number) => rowIndex < (actualFrozenRows))
                       ?.map((r: any, rowIndex: number) =>
                         <tr
-                          key={rowIndex}
+                          key={`row--${rowIndex}`}
                           ref={(ref) => {
                             processRow(ref, rowIndex);
                           }}
                         >
                           {
-                            r?.filter((_r: any[], columnIndex: number) => columnIndex >= frozenColumns)?.map((c: any, columnIndex: number) => {
+                            r
+                              ?.filter((_r: any[], columnIndex: number) => columnIndex >= (actualFrozenColumns))
+                              ?.map((c: any, columnIndex: number) => {
 
-                              const width = cols?.[columnIndex + frozenColumns]?.width || "auto"
+                                const width = cols?.[columnIndex + frozenColumns]?.width || "auto"
 
-                              return <td
-                                key={columnIndex}
-                                className={classNames(styles.Cell, styles.Head, headerRowClass)}
-                                style={{
-                                  ...headerRowStyle,
-                                  width,
-                                  minWidth: width
-                                }}
-                                ref={(ref) => {
-                                  if (ref?.style && rowIndex == 0) {
-                                    processColumn(ref, columnIndex + frozenColumns);
-                                  }
-                                }}>{c.content}</td>
-                            }
-                            )
+                                return <td
+                                  key={columnIndex}
+                                  className={classNames(styles.Cell, styles.Head, headerRowClass)}
+                                  style={{
+                                    ...headerRowStyle,
+                                    width,
+                                    minWidth: width
+                                  }}
+                                  ref={(ref) => {
+                                    if (ref?.style && rowIndex == 0) {
+                                      processColumn(ref, columnIndex + frozenColumns);
+                                    }
+                                  }}>{c.content}</td>
+                              })
                           }
-                        </tr>)
+                        </tr>
+                      )
                   }
                 </tbody>
               </table>
@@ -263,17 +381,36 @@ const Table = ({
             <tbody>
               {
                 data
-                  ?.filter((_r: any[], rowIndex: number) => rowIndex >= frozenRows)
+                  ?.filter((_r: any[], rowIndex: number) => rowIndex >= (actualFrozenRows))
                   ?.map((r: any, rowIndex: number) =>
                     <tr
                       key={rowIndex}
                       style={{
-                        height: rowHeights?.[rowIndex + frozenRows]?.height || "auto"
+                        height: rowHeights?.[rowIndex + actualFrozenRows]?.height || "auto"
                       }}
                       ref={(ref) => {
-                        processRow(ref, rowIndex + frozenRows);
+                        if ((r.length - 1) <= 0) // if there is no other column
+                          processRow(ref, rowIndex + frozenRows);
                       }}
                     >
+                      {
+                        showColumnAndRowLabels &&
+                        <td
+                          className={classNames(styles.Cell, styles.Head, headerRowClass)}
+                          style={{
+                            overflow: "hidden",
+                            textAlign: "center",
+                            verticalAlign: "middle",
+                            ...cellStyle,
+                            ...{
+                              width: prefferedRowLabelWidth,
+                              minWidth: prefferedRowLabelWidth,
+                              ["--column-index"]: -1,
+                              ["--column-id"]: "auto"
+                            }
+                          }}
+                        >{rowIndex + actualFrozenRows + 1}</td>
+                      }
                       {
                         r.filter((_r: any[], i: number) => i < frozenColumns).map((c: any, columnIndex: number) => {
 
@@ -333,20 +470,21 @@ const Table = ({
                 <tbody>
                   {
                     data
-                      ?.filter((_r: any[], rowIndex: number) => rowIndex >= frozenRows)
+                      ?.filter((_r: any[], rowIndex: number) => rowIndex >= actualFrozenRows)
                       ?.map((r: any, rowIndex: number) =>
                         <tr
                           key={rowIndex}
                           style={{
-                            height: rowHeights?.[rowIndex + frozenRows]?.height || "auto",
+                            height: rowHeights?.[rowIndex + actualFrozenRows]?.height || "auto",
                           }}
                           ref={(ref) => {
-                            processRow(ref, rowIndex + frozenRows);
+                            if (!t3Ref.current)
+                              processRow(ref, rowIndex + actualFrozenRows);
                           }}
                         >
                           {
                             r
-                              ?.filter((_r: any[], columnIndex: number) => columnIndex >= frozenColumns)
+                              ?.filter((_r: any[], columnIndex: number) => columnIndex >= actualFrozenColumns)
                               ?.map((c: any, columnIndex: number) => {
                                 const w = (frozenRows == 0 ? cols?.[columnIndex + frozenColumns].width : colWidths?.[columnIndex + frozenColumns]?.width) || "auto";
 
