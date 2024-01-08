@@ -6,7 +6,7 @@ import rows from "./sample.json"
 function App() {
   const columns = [
     {
-      width: 100,
+      width: 400,
       id: "Column1",
       title: "Column A"
     },
@@ -81,7 +81,7 @@ function App() {
     <div className={styles.App}>
       <Table
         hideColumnHeaders
-        // showColumnAndRowLabels
+        showColumnAndRowLabels
         freezeColumnHeaders
         freezeFirstColumn
         freezeRows={0}
