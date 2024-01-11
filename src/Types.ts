@@ -28,14 +28,25 @@ export type TableProps = {
   onColumnChanged?: (column: Column, columns?: Column[]) => void;
 };
 
-export type FocusedColumnInfo = {
-  type: "column" | "row";
-  index: number;
-  element?: any;
-  dimension?: {
-    width: number;
-    height: number;
-  };
+export type FocusedColumnInfo =
+  | {
+      type: "column" | "row";
+      index: number;
+      element?: any;
+      dimension?: {
+        width: number;
+        height: number;
+      };
+    }
+  | null
+  | undefined;
+
+export type CellDimension = {
+  height?: number;
+  width?: number;
+};
+export type CellDimensionCollection = {
+  [name: string | number]: Partial<CellDimension>;
 };
 
 export type SubTableProps = {
@@ -45,16 +56,17 @@ export type SubTableProps = {
   actualFrozenRows: number;
   frozenColumns: number;
   actualFrozenColumns: number;
-  colWidths: { width: number }[];
+  colWidths: CellDimension[];
   cols: Column[];
-  rowHeights: { height: number }[];
+  rowHeights: CellDimension[];
   columnLabels: string[];
   width?: string | number;
   height?: string | number;
   columnRefs?: RefObject<HTMLElement>[];
+  rowRefs?: RefObject<HTMLElement>[];
   focusedColumnOrRow?: FocusedColumnInfo;
   onWidthChanged?: (width: number) => void;
-  onRowHeightsChanged?: (rowHeights: { height: number }[]) => void;
-  onColumnWidthsChanged?: (colWidths: { width: number }[]) => void;
+  onRowHeightsChanged?: (rowHeights: CellDimensionCollection) => void;
+  onColumnWidthsChanged?: (colWidths: CellDimension[]) => void;
   setFocusedColumnOrRow?: (focus?: FocusedColumnInfo | undefined | null) => void;
 };

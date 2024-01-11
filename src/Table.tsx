@@ -1,11 +1,11 @@
-import { useRef, useState, useEffect, RefObject, useLayoutEffect, Fragment } from 'react';
+import { useRef, useState, useEffect, useLayoutEffect, Fragment } from 'react';
 import styles from "./Table.module.scss"
 import classNames from 'classnames';
 import T1 from './T1';
 import T2 from './T2';
 import T3 from './T3';
 import T4 from './T4';
-import { Column, FocusedColumnInfo, TableProps } from './Types';
+import { CellDimension, CellDimensionCollection, Column, FocusedColumnInfo, TableProps } from './Types';
 
 export function letterSequence() {
   let currentLetter = 'A'.charCodeAt(0); // Start with ASCII code for 'A'
@@ -49,9 +49,9 @@ const Table = ({
   const t2Ref = useRef(null);
   const t3Ref = useRef(null);
 
-  const [rowHeights, setRowHeights] = useState<{ height: number, ref?: RefObject<HTMLTableRowElement> }[]>([]);
-  const [colWidths, setColWidths] = useState<{ width: number, ref?: RefObject<any> }[]>(showColumnAndRowLabels ? [{ width: prefferedColumnLabelHeight }] : []);
-  const [t3Width, setT3Width] = useState<string | number>("auto");
+  const [topRowHeights, setTopRowHeights] = useState<Partial<CellDimension>[]>([]);
+  const [rowHeights, setRowHeights] = useState<Partial<CellDimension>[]>([]);
+  const [colWidths, setColWidths] = useState<CellDimension[]>(showColumnAndRowLabels ? [{ width: prefferedColumnLabelHeight }] : []);
   const [frozenColumns, setFrozenColumns] = useState<number>(freezeColumns);
   const [frozenRows, setFrozenRows] = useState<number>(freezeRows);
   const [cols, setCols] = useState<Column[]>([]);
@@ -67,8 +67,6 @@ const Table = ({
       al = { ...al, ...Object.keys(cu) }
       return al;
     }, {}))).map((col: Column | any, i) => {
-
-      // if (showColumnAndRowLabels) colLabels.push("")
       colLabels.push(letterGenerator.next());
 
       if (typeof col == "string") {
@@ -111,7 +109,7 @@ const Table = ({
     if (newRowHeights.length == 0 && showColumnAndRowLabels) newRowHeights[0] = { height: prefferedColumnLabelHeight }
 
     setRowHeights(newRowHeights);
-  }, [rows, rows?.length]);
+  }, []);
 
 
   const data = [
@@ -133,10 +131,9 @@ const Table = ({
     })
   ];
 
-  // ensure tde width of t1 and t3 are synced
   useEffect(() => {
-    if ((t1Ref?.current as any)?.table) setT3Width((t1Ref?.current as any)?.table?.getBoundingClientRect()?.width)
-  }, [(t1Ref?.current as any)?.table?.["clientWidth"]])
+    console.log(rowHeights)
+  }, [data, data.length]);
 
   //set the frozen rows
   useEffect(() => {
@@ -152,35 +149,56 @@ const Table = ({
     setFrozenColumns(freezeColumns + _one);
   }, [freezeFirstColumn, freezeColumns, showColumnAndRowLabels, shift]);
 
-  useEffect(() => {
-    const width = prefferedRowLabelWidth;
-    const height = prefferedColumnLabelHeight;
-    if (showColumnAndRowLabels) {
-      const newRowHeights = [...rowHeights];
-      newRowHeights[0] = { height };
-      setRowHeights(newRowHeights);
+  // useEffect(() => {
+  //   const width = prefferedRowLabelWidth;
+  //   const height = prefferedColumnLabelHeight;
+  //   if (showColumnAndRowLabels) {
+  //     const newRowHeights = [...rowHeights];
+  //     newRowHeights[0] = { height };
+  //     setRowHeights(newRowHeights);
 
-      const newColWidths = [...colWidths];
-      newColWidths[0] = { width };
-      setColWidths(newColWidths);
-    } else {
-      if (rowHeights?.length >= 1) {
-        const newRowHeights = [...rowHeights];
-        newRowHeights[0] = { height };
-        setRowHeights(newRowHeights);
-      }
+  //     const newColWidths = [...colWidths];
+  //     newColWidths[0] = { width };
+  //     setColWidths(newColWidths);
+  //   } else {
+  //     if (rowHeights?.length >= 1) {
+  //       const newRowHeights = [...rowHeights];
+  //       newRowHeights[0] = { height };
+  //       setRowHeights(newRowHeights);
+  //     }
 
-      if (colWidths?.length >= 1) {
-        const newColWidths = [...colWidths];
-        newColWidths[0] = { width };
-        setColWidths(newColWidths);
-      }
-    }
+  //     if (colWidths?.length >= 1) {
+  //       const newColWidths = [...colWidths];
+  //       newColWidths[0] = { width };
+  //       setColWidths(newColWidths);
+  //     }
+  //   }
 
-  }, [showColumnAndRowLabels]);
+  // }, [showColumnAndRowLabels]);
 
   const actualFrozenRows = frozenRows - shift;
   const actualFrozenColumns = frozenColumns - shift;
+
+  function onRowHeightsChanged(_rHeights: CellDimensionCollection) {
+    const keys = Object.keys(_rHeights) as any as number[];
+    if (keys.length > 0) {
+      if (keys[0] < frozenRows) {
+        let heights = [...topRowHeights];
+        keys.forEach((k: any) => {
+          heights[k] = _rHeights[k]
+        });
+
+        setTopRowHeights(heights);
+      } else {
+        let heights = [...rowHeights];
+        keys.forEach((k: any) => {
+          heights[k] = _rHeights[k]
+        });
+
+        setRowHeights(heights);
+      }
+    }
+  }
 
   return (
     <div className={classNames(styles.Table)} ref={topRef}>
@@ -208,16 +226,15 @@ const Table = ({
                   data,
                   cols,
                   colWidths,
-                  rowHeights,
+                  rowHeights: topRowHeights,
                   actualFrozenColumns,
                   actualFrozenRows,
                   columnLabels,
                   shift,
                   columnRefs: [...((t1Ref as any)?.current?.columnRefs || []), ...((t2Ref as any)?.current?.columnRefs || [])],
-                  onRowHeightsChanged: (_rHeights: { height: number }[]) => {
-                    // setRowHeights(rHeights);
-                  },
-                  onColumnWidthsChanged: (colWidths: { width: number }[]) => {
+                  rowRefs: [...((t1Ref as any)?.current?.rowRefs || []), ...((t3Ref as any)?.current?.rowRefs || [])],
+                  onRowHeightsChanged,
+                  onColumnWidthsChanged: (colWidths: CellDimension[]) => {
                     setColWidths(colWidths);
                   },
                   focusedColumnOrRow,
@@ -243,21 +260,14 @@ const Table = ({
                   data,
                   cols,
                   colWidths,
-                  rowHeights,
+                  rowHeights: topRowHeights,
                   actualFrozenColumns,
                   actualFrozenRows,
                   columnLabels,
                   shift,
                   columnRefs: [...((t1Ref as any)?.current?.columnRefs || []), ...((t2Ref as any)?.current?.columnRefs || [])],
-                  onRowHeightsChanged: (_rHeights: { height: number }[]) => {
-                    // const _rowHeights = [...rowHeights];
-                    // rHeights.forEach((r, i) => {
-                    //   _rowHeights[i] = { ..._rowHeights[i], ...r };
-                    // });
-
-                    // setRowHeights(_rowHeights);
-                  },
-                  onColumnWidthsChanged: (colWidths: { width: number }[]) => {
+                  onRowHeightsChanged,
+                  onColumnWidthsChanged: (colWidths: CellDimension[]) => {
                     setColWidths(colWidths);
                   },
                   ...((t1Ref?.current as any)?.table && { width: `calc(100% - ${(t1Ref?.current as any)?.table?.getBoundingClientRect().width}px)` }),
@@ -296,14 +306,13 @@ const Table = ({
             columnLabels,
             shift,
             ...((t1Ref?.current as any)?.table ? { width: (t1Ref?.current as any)?.table?.getBoundingClientRect().width } : {}),
-
-            onRowHeightsChanged: (rowHeights: { height: number }[]) => {
-              console.log("rowHeights", rowHeights.map(r => r.height));
-              setRowHeights(rowHeights);
-            },
-            onColumnWidthsChanged: (colWidths: { width: number }[]) => {
+            rowRefs: [...((t1Ref as any)?.current?.rowRefs || []), ...((t3Ref as any)?.current?.rowRefs || [])],
+            onRowHeightsChanged,
+            onColumnWidthsChanged: (colWidths: CellDimension[]) => {
               setColWidths(colWidths);
-            }
+            },
+            focusedColumnOrRow,
+            setFocusedColumnOrRow: (focusedColumnOrRow?: FocusedColumnInfo) => setFocusedColumnOrRow(focusedColumnOrRow),
           }}
         />
         {
@@ -329,15 +338,13 @@ const Table = ({
               actualFrozenColumns,
               actualFrozenRows,
               columnLabels,
-              width: t3Width,
+              width: (t1Ref?.current as any)?.table?.getBoundingClientRect()?.width,
               shift,
               onT4HorizontalScroll: (position) => {
                 (t2Ref?.current as any)?.container?.scrollTo(position, 0);
               },
-              onRowHeightsChanged: (rowHeights: { height: number }[]) => {
-                setRowHeights(rowHeights);
-              },
-              onColumnWidthsChanged: (colWidths: { width: number }[]) => {
+              onRowHeightsChanged,
+              onColumnWidthsChanged: (colWidths: CellDimension[]) => {
                 setColWidths(colWidths);
               },
               focusedColumnOrRow,

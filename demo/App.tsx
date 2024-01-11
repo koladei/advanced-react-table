@@ -83,8 +83,8 @@ function App() {
         // hideColumnHeaders
         freezeColumnHeaders
         freezeFirstColumn
-        freezeRows={0}
-        freezeColumns={0}
+        freezeRows={2}
+        freezeColumns={1}
         headerRowStyle={{ padding: 5 }}
         cellStyle={{ padding: 5 }}
         cellClass={styles.Cell}

@@ -71,14 +71,15 @@ const T2 = forwardRef(({
   useEffect(() => {
     const observer = new ResizeObserver((_entries) => {
       if (typeof onRowHeightsChanged == "function") {
-        const rHeights = [...rowHeights];
+        let rHeights = {};
         t2Ref?.current?.querySelectorAll("tr[data-item-type='row']").forEach((row: any) => {
           const rowIndex = parseInt(row.getAttribute("data-row-id") || "");
           const height = row?.getBoundingClientRect()?.height;
-          rHeights[rowIndex] = { height };
+          if (height != rowHeights[rowIndex])
+            rHeights = { ...rHeights, [rowIndex]: { height } };
         });
 
-        onRowHeightsChanged(rHeights);
+        // onRowHeightsChanged(rHeights);
       }
 
       if (typeof onColumnWidthsChanged == "function") {
@@ -102,13 +103,13 @@ const T2 = forwardRef(({
   }, [t2Ref?.current]);
 
   return (
-    <div className={classNames(styles.T2Container)} style={
+    <div ref={t2ContainerRef as any} className={classNames(styles.T2Container)} style={
       {
         overflow: "hidden",
         display: "flex",
         width
       }
-    } ref={t2ContainerRef as any}>
+    }>
       <table className={classNames('T2', styles.T2)} cellPadding={0} cellSpacing={0} ref={t2Ref as any}>
         <tbody>
           {

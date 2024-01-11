@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useImperativeHandle, useRef, RefObject } from 'react';
 import styles from "./Table.module.scss"
 import classNames from 'classnames';
 import { SubTableProps, TableProps } from './Types';
@@ -18,18 +18,42 @@ const T4 = forwardRef(({
   width = "100%",
   height = "100%",
   onT4HorizontalScroll = () => { }
-}: TableProps & SubTableProps & { onT4HorizontalScroll: (scrollPosition?: number) => void }, _ref?: any) => {
+}: TableProps & SubTableProps & { onT4HorizontalScroll: (scrollPosition?: number) => void }, ref?: any) => {
+  // refs
+  const r = useRef(null);
+  const t4ContainerRef: RefObject<HTMLElement> = useRef(null);
+  const t4Ref: RefObject<HTMLElement> = useRef(null);
+  if (!ref) {
+    ref = r;
+  }
+
+  useImperativeHandle(ref, () => ({
+    get container(): HTMLElement {
+      return (t4Ref as any).current;
+    },
+    get table(): HTMLElement {
+      return (t4Ref as any).current;
+    },
+    get rowRefs(): HTMLElement[] {
+      return [...(t4Ref as any).current.querySelectorAll("tr[data-item-type='row']")?.map((row: any) => {
+        return row?.querySelector("td[data-item-type='column']");
+      })] as any[];
+    },
+    get columnRefs(): HTMLElement[] {
+      return [...(t4Ref as any).current.querySelector("tr[data-item-type='row']").querySelectorAll("td[data-item-type='column']")] as any[];
+    }
+  }), [t4ContainerRef, t4Ref?.current]);
 
   const handleHorizontalScroll = () => {
     onT4HorizontalScroll && onT4HorizontalScroll((event?.target as any)?.scrollLeft || 0);
   };
 
   return (
-    <div className={styles.T4Container} style={{
+    <div ref={t4ContainerRef as any} className={styles.T4Container} style={{
       width, height: "fit-content", minHeight: height
     }}
       onScroll={handleHorizontalScroll}>
-      <table className={classNames('T4', styles.T4)} cellPadding={0} cellSpacing={0} style={{
+      <table ref={t4Ref as any} className={classNames('T4', styles.T4)} cellPadding={0} cellSpacing={0} style={{
         height: "auto",
         minWidth: "100%"
       }}>
