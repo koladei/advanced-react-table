@@ -80,18 +80,18 @@ function App() {
   return (
     <div className={styles.App}>
       <Table
-        hideColumnHeaders
-        showColumnAndRowLabels
+        // hideColumnHeaders
         freezeColumnHeaders
         freezeFirstColumn
         freezeRows={0}
-        freezeColumns={1}
+        freezeColumns={0}
         headerRowStyle={{ padding: 5 }}
         cellStyle={{ padding: 5 }}
         cellClass={styles.Cell}
         headerRowClass={styles.Header}
         columns={columns}
-        rows={rows} />
+        rows={rows}
+      />
     </div>
   )
 }
