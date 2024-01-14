@@ -1,12 +1,11 @@
 .Table {
-
   display: flex;
   flex-direction: column;
   margin: 0px;
   padding: 0px;
   max-width: 100%;
   width: 100%;
-  min-width: 100%;
+  min-width: 100px;
   overflow: hidden;
   height: calc(100% - 0px);
   max-height: calc(100% - 0px);
@@ -28,6 +27,7 @@
     text-overflow: ellipsis;
 
     &.Row1 {
+      flex-wrap: nowrap !important;
       .T1 {
         width: fit-content;
       }
@@ -46,6 +46,7 @@
     }
 
     &.Row2 {
+      flex-wrap: nowrap !important;
       overflow: hidden;
       overflow-y: scroll;
       padding: 0px;

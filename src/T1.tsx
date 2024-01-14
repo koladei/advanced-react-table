@@ -2,6 +2,7 @@ import { useRef, useEffect, RefObject, forwardRef, useImperativeHandle } from 'r
 import styles from "./Table.module.scss"
 import classNames from 'classnames';
 import { CellDimensionCollection, FocusedColumnInfo, SubTableProps, TableProps } from './Types';
+import { publishResize } from './Utils';
 
 const T1 = forwardRef(({
   data = [],
@@ -20,7 +21,7 @@ const T1 = forwardRef(({
   focusedColumnOrRow,
   setFocusedColumnOrRow = (_?: FocusedColumnInfo | undefined | null) => { },
   onRowHeightsChanged = (_: CellDimensionCollection) => { },
-  onColumnWidthsChanged,
+  onColumnWidthsChanged = (_: CellDimensionCollection) => { },
 }: TableProps & SubTableProps, ref?: any) => {
   const headerRefs = useRef([]);
   const t1Ref: RefObject<HTMLElement> = useRef(null);
@@ -48,34 +49,13 @@ const T1 = forwardRef(({
 
     // monitor the width and height of the table.
     const observer = new ResizeObserver((_entries) => {
-      if (typeof onRowHeightsChanged == "function") {
-        let rHeights = {};
-        t1Ref?.current?.querySelectorAll("tr[data-item-type='row']").forEach((row: any) => {
-          const rowIndex = parseInt(row.getAttribute("data-row-id"));
-          const height = row?.getBoundingClientRect()?.height;
-          rHeights = { ...rHeights, [rowIndex]: { height } };
-        });
-
-        // onRowHeightsChanged(rHeights);
-      }
-
-      if (typeof onColumnWidthsChanged == "function") {
-        const cWidths = [...colWidths];
-        const firstRow = t1Ref?.current?.querySelector("tr[data-item-type='row']");
-        firstRow?.querySelectorAll("td[data-item-type='column']").forEach((column: any) => {
-          const columnIndex = parseInt(column.getAttribute("data-column-id"));
-          const width = column?.getBoundingClientRect()?.width;
-          cWidths[columnIndex] = { width };
-        });
-
-        // onColumnWidthsChanged(cWidths);
-      }
+      publishResize(t1Ref, onRowHeightsChanged, onColumnWidthsChanged);
     });
 
     if (t1Ref?.current) {
       observer.observe(t1Ref?.current);
 
-      // all get the refs of the header cells
+      // get all the refs of the header cells
       const firstRow = t1Ref?.current?.querySelector("tr[data-item-type='row']");
       firstRow?.querySelectorAll("td[data-item-type='column']").forEach((column: any) => {
         const columnIndex = parseInt(column.getAttribute("data-column-id") || "");
@@ -87,7 +67,7 @@ const T1 = forwardRef(({
     return () => observer.disconnect();
   }, [t1Ref?.current]);
 
-  return (<div>
+  return (<div style={{ width: t1Ref?.current?.offsetWidth, maxWidth: t1Ref?.current?.offsetWidth }}>
     <table className={classNames('T1', styles.T1)} cellPadding={0} cellSpacing={0} ref={t1Ref as any} style={{ margin: 0 }}>
       <tbody>
         {
@@ -97,13 +77,19 @@ const T1 = forwardRef(({
             ),
             ...data?.filter((_r: any[], rowIndex: number) => rowIndex < (actualFrozenRows))
           ]?.map((r: any, rowIndex: number) => {
+            const height = rowHeights?.[rowIndex]?.height || "auto";
+
             return (
               <tr
                 key={`row--${rowIndex}`}
                 {...{ "data-row-id": rowIndex, "data-item-type": "row" }}
 
                 style={{
-                  height: rowHeights?.[rowIndex]?.height || "auto",
+                  ...(height != "auto" && {
+                    height,
+                    minHeight: height,
+                    maxHeight: height
+                  })
                 }}
               >
                 {
@@ -160,8 +146,7 @@ const T1 = forwardRef(({
                             const element = columnRefs?.[columnIndex - 1] as any as HTMLElement;
                             if (element) {
                               const width = Math.abs(clientX - element.getBoundingClientRect().left);
-                              const newColWidths = [...colWidths]
-                              newColWidths[columnIndex - 1] = { width };
+                              const newColWidths = { [columnIndex - 1]: { width } }
                               onColumnWidthsChanged && onColumnWidthsChanged(newColWidths);
                             }
                           }
@@ -170,8 +155,7 @@ const T1 = forwardRef(({
                             const element = columnRefs?.[columnIndex] as any as HTMLElement;
                             if (element) {
                               const width = Math.abs(clientX - element.getBoundingClientRect().left);
-                              const newColWidths = [...colWidths]
-                              newColWidths[columnIndex] = { width };
+                              const newColWidths = { [columnIndex]: { width } }
                               onColumnWidthsChanged && onColumnWidthsChanged(newColWidths);
                             }
                           }

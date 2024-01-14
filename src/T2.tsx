@@ -2,6 +2,7 @@ import { useRef, useEffect, RefObject, forwardRef, useImperativeHandle } from 'r
 import styles from "./Table.module.scss"
 import classNames from 'classnames';
 import { FocusedColumnInfo, SubTableProps, TableProps } from './Types';
+import { publishResize } from './Utils';
 
 
 const T2 = forwardRef(({
@@ -70,29 +71,7 @@ const T2 = forwardRef(({
   // monitore the width and height of the table.
   useEffect(() => {
     const observer = new ResizeObserver((_entries) => {
-      if (typeof onRowHeightsChanged == "function") {
-        let rHeights = {};
-        t2Ref?.current?.querySelectorAll("tr[data-item-type='row']").forEach((row: any) => {
-          const rowIndex = parseInt(row.getAttribute("data-row-id") || "");
-          const height = row?.getBoundingClientRect()?.height;
-          if (height != rowHeights[rowIndex])
-            rHeights = { ...rHeights, [rowIndex]: { height } };
-        });
-
-        // onRowHeightsChanged(rHeights);
-      }
-
-      if (typeof onColumnWidthsChanged == "function") {
-        const cWidths = [...colWidths];
-        const row = t2Ref?.current?.querySelector("tr[data-item-type='row']");
-        row?.querySelectorAll("td[data-item-type='column']").forEach((column: any) => {
-          const columnIndex = parseInt(column.getAttribute("data-column-id"));
-          const width = column?.getBoundingClientRect()?.width;
-          cWidths[columnIndex] = { width };
-        });
-
-        // onColumnWidthsChanged(cWidths);
-      }
+      publishResize(t2Ref, frozenColumns < 1 ? onRowHeightsChanged : undefined, onColumnWidthsChanged);
     });
 
     if (t2Ref?.current) {
@@ -130,7 +109,11 @@ const T2 = forwardRef(({
                   key={`row--${rowIndex + (shift || 0)}`}
                   {...{ "data-row-id": rowIndex, "data-item-type": "row" }}
                   style={{
-                    height
+                    ...(height != "auto" && {
+                      height,
+                      minHeight: height,
+                      maxHeight: height
+                    })
                   }}
                 >
                   {
@@ -171,8 +154,7 @@ const T2 = forwardRef(({
                               if (element) {
                                 const index = parseInt(element.getAttribute("data-column-id") || "");
                                 const width = Math.abs(clientX - element.getBoundingClientRect().left);
-                                const newColWidths = [...colWidths]
-                                newColWidths[index] = { width };
+                                const newColWidths = { [index]: { width } }
                                 onColumnWidthsChanged && onColumnWidthsChanged(newColWidths);
                               }
                             }
@@ -182,8 +164,7 @@ const T2 = forwardRef(({
                               if (element) {
                                 const index = parseInt(element.getAttribute("data-column-id") || "");
                                 const width = Math.abs(clientX - element.getBoundingClientRect().left);
-                                const newColWidths = [...colWidths]
-                                newColWidths[index] = { width };
+                                const newColWidths = { [index]: { width } }
                                 onColumnWidthsChanged && onColumnWidthsChanged(newColWidths);
                               }
                             }

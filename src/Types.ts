@@ -67,6 +67,6 @@ export type SubTableProps = {
   focusedColumnOrRow?: FocusedColumnInfo;
   onWidthChanged?: (width: number) => void;
   onRowHeightsChanged?: (rowHeights: CellDimensionCollection) => void;
-  onColumnWidthsChanged?: (colWidths: CellDimension[]) => void;
+  onColumnWidthsChanged?: (colWidths: CellDimensionCollection) => void;
   setFocusedColumnOrRow?: (focus?: FocusedColumnInfo | undefined | null) => void;
 };

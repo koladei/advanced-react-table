@@ -51,6 +51,7 @@ const Table = ({
 
   const [topRowHeights, setTopRowHeights] = useState<Partial<CellDimension>[]>([]);
   const [rowHeights, setRowHeights] = useState<Partial<CellDimension>[]>([]);
+  const [leftColWidths, setLeftColWidths] = useState<Partial<CellDimension>[]>([]);
   const [colWidths, setColWidths] = useState<CellDimension[]>(showColumnAndRowLabels ? [{ width: prefferedColumnLabelHeight }] : []);
   const [frozenColumns, setFrozenColumns] = useState<number>(freezeColumns);
   const [frozenRows, setFrozenRows] = useState<number>(freezeRows);
@@ -200,11 +201,32 @@ const Table = ({
     }
   }
 
+  function onColWidthsChanged(_cWidths: CellDimensionCollection) {
+    const keys = Object.keys(_cWidths) as any as number[];
+    if (keys.length > 0) {
+      if (keys[0] < frozenColumns) {
+        let widths = [...leftColWidths];
+        keys.forEach((k: any) => {
+          widths[k] = _cWidths[k]
+        });
+
+        setLeftColWidths(widths);
+      } else {
+        let widths = [...rowHeights];
+        keys.forEach((k: any) => {
+          widths[k] = _cWidths[k]
+        });
+
+        setColWidths(widths);
+      }
+    }
+  }
+
   return (
     <div className={classNames(styles.Table)} ref={topRef}>
       {
         (frozenRows > 0 || showColumnAndRowLabels) &&
-        <div className={classNames(styles.TableRow, styles.Row1)} ref={row1Ref}>
+        <div className={classNames(styles.TableRow, styles.Row1)} style={{ display: 'flex' }} ref={row1Ref}>
           {
             (frozenColumns > 0 || showColumnAndRowLabels) &&
             <Fragment>
@@ -225,7 +247,7 @@ const Table = ({
                   allowResize,
                   data,
                   cols,
-                  colWidths,
+                  colWidths: leftColWidths,
                   rowHeights: topRowHeights,
                   actualFrozenColumns,
                   actualFrozenRows,
@@ -234,9 +256,7 @@ const Table = ({
                   columnRefs: [...((t1Ref as any)?.current?.columnRefs || []), ...((t2Ref as any)?.current?.columnRefs || [])],
                   rowRefs: [...((t1Ref as any)?.current?.rowRefs || []), ...((t3Ref as any)?.current?.rowRefs || [])],
                   onRowHeightsChanged,
-                  onColumnWidthsChanged: (colWidths: CellDimension[]) => {
-                    setColWidths(colWidths);
-                  },
+                  onColWidthsChanged,
                   focusedColumnOrRow,
                   setFocusedColumnOrRow: (focusedColumnOrRow: any) => setFocusedColumnOrRow(focusedColumnOrRow)
                 }}
@@ -267,9 +287,7 @@ const Table = ({
                   shift,
                   columnRefs: [...((t1Ref as any)?.current?.columnRefs || []), ...((t2Ref as any)?.current?.columnRefs || [])],
                   onRowHeightsChanged,
-                  onColumnWidthsChanged: (colWidths: CellDimension[]) => {
-                    setColWidths(colWidths);
-                  },
+                  onColWidthsChanged,
                   ...((t1Ref?.current as any)?.table && { width: `calc(100% - ${(t1Ref?.current as any)?.table?.getBoundingClientRect().width}px)` }),
                   focusedColumnOrRow,
                   setFocusedColumnOrRow: (focusedColumnOrRow: any) => setFocusedColumnOrRow(focusedColumnOrRow),
@@ -280,7 +298,8 @@ const Table = ({
         </div>
       }
       <div ref={row2Ref} className={classNames(styles.TableRow, styles.Row2)} style={{
-        minHeight: `calc(100% - ${(row1Ref?.current as any)?.getBoundingClientRect().height || 0}px)`
+        minHeight: `calc(100% - ${(row1Ref?.current as any)?.getBoundingClientRect().height || 0}px)`,
+        display: "flex"
       }}>
         <T3
           ref={t3Ref}
@@ -297,7 +316,7 @@ const Table = ({
             allowResize,
             data,
             cols,
-            colWidths,
+            colWidths: leftColWidths,
             rowHeights,
             frozenColumns,
             frozenRows,
@@ -307,10 +326,9 @@ const Table = ({
             shift,
             ...((t1Ref?.current as any)?.table ? { width: (t1Ref?.current as any)?.table?.getBoundingClientRect().width } : {}),
             rowRefs: [...((t1Ref as any)?.current?.rowRefs || []), ...((t3Ref as any)?.current?.rowRefs || [])],
+            // columnRefs: [...((t3Ref as any)?.current?.rowRefs || []), ...((t3Ref as any)?.current?.rowRefs || [])],
             onRowHeightsChanged,
-            onColumnWidthsChanged: (colWidths: CellDimension[]) => {
-              setColWidths(colWidths);
-            },
+            onColWidthsChanged,
             focusedColumnOrRow,
             setFocusedColumnOrRow: (focusedColumnOrRow?: FocusedColumnInfo) => setFocusedColumnOrRow(focusedColumnOrRow),
           }}
@@ -344,9 +362,7 @@ const Table = ({
                 (t2Ref?.current as any)?.container?.scrollTo(position, 0);
               },
               onRowHeightsChanged,
-              onColumnWidthsChanged: (colWidths: CellDimension[]) => {
-                setColWidths(colWidths);
-              },
+              onColWidthsChanged,
               focusedColumnOrRow,
               setFocusedColumnOrRow: (focusedColumnOrRow: any) => setFocusedColumnOrRow(focusedColumnOrRow)
             }}
