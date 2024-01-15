@@ -81,10 +81,11 @@ function App() {
     <div className={styles.App}>
       <Table
         // hideColumnHeaders
+        showColumnAndRowLabels
         freezeColumnHeaders
         freezeFirstColumn
-        freezeRows={2}
-        freezeColumns={1}
+        freezeRows={0}
+        freezeColumns={0}
         headerRowStyle={{ padding: 5 }}
         cellStyle={{ padding: 5 }}
         cellClass={styles.Cell}

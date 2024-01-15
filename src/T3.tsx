@@ -10,15 +10,17 @@ const T3 = forwardRef(({
   cellStyle = {},
   cellClass = '',
   headerRowClass = '',
+  headerColumnClass = '',
+  addressCellClass = '',
   showColumnAndRowLabels = false,
   actualFrozenColumns,
   actualFrozenRows,
   frozenColumns,
   frozenRows,
+  cols,
   data = [],
   rowHeights,
   colWidths,
-  shift = 0,
   width,
   columnRefs,
   rowRefs,
@@ -78,125 +80,119 @@ const T3 = forwardRef(({
                 }}
               >
                 {
-                  showColumnAndRowLabels &&
-                  <td
-                    {...{ "data-column-id": 0, "data-item-type": "column" }}
-                    className={classNames(styles.Cell, styles.Head, headerRowClass)}
-                    style={{
-                      overflow: "hidden",
-                      textAlign: "center",
-                      verticalAlign: "middle",
-                      ...cellStyle,
-                      ...{
-                        width: colWidths?.[0]?.width || "auto",
-                        maxWidth: colWidths?.[0]?.width || "auto"
-                      }
-                    }}
-                  >{rowIndex + actualFrozenRows + 1}</td>
-                }
-                {
-                  r.filter((_r: any[], i: number) => i < actualFrozenColumns)
+                  [
+                    //add the row index column
+                    ...(!showColumnAndRowLabels ? [] : [{ content: rowIndex + frozenRows }]),
 
-                    .map((c: any, columnIndex: number) => {
-                      const width = colWidths?.[columnIndex + shift]?.width || "auto";
+                    // add the data columns
+                    ...r.filter((_r: any[], i: number) => i < actualFrozenColumns)
+                  ].map((c: any, columnIndex: number) => {
+                    const width = colWidths?.[columnIndex]?.width || cols?.[columnIndex]?.width || "auto"
 
-                      return (
-                        <td
-                          key={columnIndex + shift}
-                          {...{ "data-column-id": columnIndex + shift, "data-item-type": "column" }}
-                          className={classNames(styles.Cell, cellClass, {
-                            [styles.Head]: columnIndex < frozenColumns,
-                            headerRowClass: columnIndex < frozenColumns
-                          })}
-                          style={{
-                            overflow: "hidden",
-                            minWidth: width,
-                            ...(width ? { width: width, } : {}),
-                            ...(columnIndex < frozenColumns ? headerRowStyle : cellStyle)
-                          }}
+                    return (
+                      <td
+                        key={columnIndex}
+                        {...{ "data-column-id": columnIndex, "data-item-type": "column" }}
+                        className={classNames(styles.Cell, cellClass, {
+                          [styles.Head]: (columnIndex == 0 && !showColumnAndRowLabels) || (columnIndex == 1 && showColumnAndRowLabels),
+                          [headerRowClass]: (rowIndex == 0 && !showColumnAndRowLabels) || (rowIndex == 1 && showColumnAndRowLabels),
+                          [headerColumnClass]: (columnIndex == 0 && !showColumnAndRowLabels) || (columnIndex == 1 && showColumnAndRowLabels),
+                          [addressCellClass]: columnIndex == 0 && showColumnAndRowLabels
+                        })}
+                        style={{
+                          overflow: "hidden",
+                          minWidth: width,
+                          ...(width ? { width: width, } : {}),
+                          ...(columnIndex < frozenColumns ? headerRowStyle : cellStyle),
+                          ...(
+                            columnIndex == 0 ? {
+                              textAlign: "center"
+                            } : {}
+                          )
+                        }}
 
-                          onMouseMove={({ currentTarget, clientX, clientY }) => {
-                            const rect = currentTarget.getBoundingClientRect();
-                            if (!focusedColumnOrRow) {
-                              if (rowIndex == 0) {
-                                const isOverLeftBorder = clientX <= rect.left + 5; // Adjust tolerance as needed
+                        onMouseMove={({ currentTarget, clientX, clientY }) => {
+                          const rect = currentTarget.getBoundingClientRect();
+                          if (!focusedColumnOrRow) {
+                            if (rowIndex == 0) {
+                              const isOverLeftBorder = clientX <= rect.left + 5; // Adjust tolerance as needed
 
-                                if (isOverLeftBorder) {
-                                  currentTarget.style.cursor = 'col-resize'; // Change cursor to indicate resizing
-                                } else {
-                                  currentTarget.style.cursor = 'default'; // Reset to default cursor
-                                }
-                              } else if (columnIndex == 0) {
-                                const isOverLeftBorder = clientY <= rect.top + 5; // Adjust tolerance as needed
+                              if (isOverLeftBorder) {
+                                currentTarget.style.cursor = 'col-resize'; // Change cursor to indicate resizing
+                              } else {
+                                currentTarget.style.cursor = 'default'; // Reset to default cursor
+                              }
+                            } else if (columnIndex == 0) {
+                              const isOverLeftBorder = clientY <= rect.top + 5; // Adjust tolerance as needed
 
-                                if (isOverLeftBorder) {
-                                  currentTarget.style.cursor = 'row-resize'; // Change cursor to indicate resizing
-                                } else {
-                                  currentTarget.style.cursor = 'default'; // Reset to default cursor
-                                }
+                              if (isOverLeftBorder) {
+                                currentTarget.style.cursor = 'row-resize'; // Change cursor to indicate resizing
+                              } else {
+                                currentTarget.style.cursor = 'default'; // Reset to default cursor
+                              }
+                            }
+                          }
+
+                          else if (focusedColumnOrRow?.type == "column" && frozenRows == 0) {
+                            if (focusedColumnOrRow?.index == columnIndex - 1) {
+                              const element = columnRefs?.[columnIndex - 1] as any as HTMLElement;
+                              if (element) {
+                                const width = Math.abs(clientX - element.getBoundingClientRect().left);
+                                const newColWidths = { [columnIndex - 1]: { width } };
+                                onColumnWidthsChanged && onColumnWidthsChanged(newColWidths);
                               }
                             }
 
-                            else if (focusedColumnOrRow?.type == "column" && frozenRows == 0) {
-                              if (focusedColumnOrRow?.index == columnIndex - 1) {
-                                const element = columnRefs?.[columnIndex - 1] as any as HTMLElement;
-                                if (element) {
-                                  const width = Math.abs(clientX - element.getBoundingClientRect().left);
-                                  const newColWidths = { [columnIndex - 1]: { width } };
-                                  onColumnWidthsChanged && onColumnWidthsChanged(newColWidths);
-                                }
+                            else if (focusedColumnOrRow?.index == columnIndex) {
+                              const element = columnRefs?.[columnIndex] as any as HTMLElement;
+                              if (element) {
+                                const width = Math.abs(clientX - element.getBoundingClientRect().left);
+                                const newColWidths = { [columnIndex]: { width } };
+                                onColumnWidthsChanged && onColumnWidthsChanged(newColWidths);
                               }
+                            }
+                          }
 
-                              else if (focusedColumnOrRow?.index == columnIndex) {
-                                const element = columnRefs?.[columnIndex] as any as HTMLElement;
-                                if (element) {
-                                  const width = Math.abs(clientX - element.getBoundingClientRect().left);
-                                  const newColWidths = { [columnIndex]: { width } };
-                                  onColumnWidthsChanged && onColumnWidthsChanged(newColWidths);
-                                }
+                          else if (focusedColumnOrRow?.type == "row") {
+                            if (focusedColumnOrRow?.index == rowIndex + frozenRows - 1) {
+                              const element = rowRefs?.[rowIndex + frozenRows - 1] as any as HTMLElement;
+                              if (element) {
+                                const height = Math.abs(clientY - element.getBoundingClientRect().top);
+                                onRowHeightsChanged && onRowHeightsChanged({ [rowIndex + frozenRows - 1]: { height } });
                               }
                             }
 
-                            else if (focusedColumnOrRow?.type == "row") {
-                              if (focusedColumnOrRow?.index == rowIndex + frozenRows - 1) {
-                                const element = rowRefs?.[rowIndex + frozenRows - 1] as any as HTMLElement;
-                                if (element) {
-                                  const height = Math.abs(clientY - element.getBoundingClientRect().top);
-                                  onRowHeightsChanged && onRowHeightsChanged({ [rowIndex + frozenRows - 1]: { height } });
-                                }
-                              }
-
-                              else if (focusedColumnOrRow?.index == rowIndex + frozenRows) {
-                                const element = rowRefs?.[rowIndex + frozenRows] as any as HTMLElement;
-                                if (element) {
-                                  const height = Math.abs(clientY - element.getBoundingClientRect().top);
-                                  onRowHeightsChanged && onRowHeightsChanged({ [rowIndex + frozenRows]: { height } });
-                                }
+                            else if (focusedColumnOrRow?.index == rowIndex + frozenRows) {
+                              const element = rowRefs?.[rowIndex + frozenRows] as any as HTMLElement;
+                              if (element) {
+                                const height = Math.abs(clientY - element.getBoundingClientRect().top);
+                                onRowHeightsChanged && onRowHeightsChanged({ [rowIndex + frozenRows]: { height } });
                               }
                             }
-                          }}
+                          }
+                        }}
 
-                          onMouseDown={({ currentTarget, clientX, clientY }) => {
-                            const rect = currentTarget.getBoundingClientRect();
+                        onMouseDown={({ currentTarget, clientX, clientY }) => {
+                          const rect = currentTarget.getBoundingClientRect();
 
-                            if (clientX <= rect.left + 5)
-                              setFocusedColumnOrRow({
-                                type: "column",
-                                index: columnIndex - 1,
-                              })
-                            else if (clientY <= rect.top + 5)
-                              setFocusedColumnOrRow({
-                                type: "row",
-                                index: rowIndex + frozenRows - 1,
-                              })
-                          }}
+                          if (clientX <= rect.left + 5)
+                            setFocusedColumnOrRow({
+                              type: "column",
+                              index: columnIndex - 1,
+                            })
+                          else if (clientY <= rect.top + 5)
+                            setFocusedColumnOrRow({
+                              type: "row",
+                              index: rowIndex + frozenRows - 1,
+                            })
+                        }}
 
-                          onMouseUp={(_event) => {
-                            setFocusedColumnOrRow && setFocusedColumnOrRow(null)
-                          }}
-                        >{c.content}</td>
-                      )
-                    })
+                        onMouseUp={(_event) => {
+                          setFocusedColumnOrRow && setFocusedColumnOrRow(null)
+                        }}
+                      >{c.content}</td>
+                    )
+                  })
                 }
               </tr>
             })

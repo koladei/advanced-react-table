@@ -17,9 +17,12 @@ export type TableProps = {
   freezeColumnHeaders?: boolean;
   freezeFirstColumn?: boolean;
   headerRowStyle?: CSSProperties;
+  headerColumnStyle?: CSSProperties;
   cellStyle?: CSSProperties;
   cellClass?: string;
   headerRowClass?: string;
+  headerColumnClass?: string;
+  addressCellClass?: string;
   blankCellValue?: string;
   showColumnAndRowLabels?: boolean;
   prefferedRowLabelWidth?: number;

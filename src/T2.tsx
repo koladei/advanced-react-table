@@ -1,13 +1,16 @@
 import { useRef, useEffect, RefObject, forwardRef, useImperativeHandle } from 'react';
 import styles from "./Table.module.scss"
 import classNames from 'classnames';
-import { FocusedColumnInfo, SubTableProps, TableProps } from './Types';
+import { CellDimensionCollection, FocusedColumnInfo, SubTableProps, TableProps } from './Types';
 import { publishResize } from './Utils';
 
 
 const T2 = forwardRef(({
+  hideColumnHeaders,
   headerRowStyle = {},
   headerRowClass = '',
+  cellClass = '',
+  addressCellClass = '',
   showColumnAndRowLabels = false,
   actualFrozenColumns,
   actualFrozenRows,
@@ -22,12 +25,9 @@ const T2 = forwardRef(({
   columnRefs,
   focusedColumnOrRow,
   setFocusedColumnOrRow = (_focus?: FocusedColumnInfo | undefined | null) => { },
-  onRowHeightsChanged,
-  onColumnWidthsChanged
+  onRowHeightsChanged = (_cdc: CellDimensionCollection) => { },
+  onColumnWidthsChanged = (_cdc: CellDimensionCollection) => { }
 }: TableProps & SubTableProps, ref?: any) => {
-
-  // const [localColWidths, setColWidths] = useState(colWidths);
-  // const [localColWidthsChanged, setColWidthsChanged] = useState(false);
 
   // refs
   const r = useRef(null);
@@ -36,24 +36,6 @@ const T2 = forwardRef(({
   if (!ref) {
     ref = r;
   }
-
-  // handle column resize
-  // useEffect(() => {
-  //   if (localColWidths) {
-  //     if (typeof onColumnWidthsChanged == "function") {
-  //       const cWidths = [...colWidths];
-  //       localColWidths.forEach((c, i) => {
-
-  //         const width = c?.width;
-  //         cWidths[i] = { width };
-  //       });
-
-  //       onColumnWidthsChanged(cWidths);
-  //     }
-  //   }
-
-  //   setColWidthsChanged(false);
-  // }, [localColWidths, localColWidthsChanged]);
 
   useImperativeHandle(ref, () => ({
     get container(): HTMLElement {
@@ -84,9 +66,9 @@ const T2 = forwardRef(({
   return (
     <div ref={t2ContainerRef as any} className={classNames(styles.T2Container)} style={
       {
-        overflow: "hidden",
-        display: "flex",
-        width
+        // display: "flex",
+        width,
+        height: t2Ref?.current?.getBoundingClientRect().height
       }
     }>
       <table className={classNames('T2', styles.T2)} cellPadding={0} cellSpacing={0} ref={t2Ref as any}>
@@ -125,13 +107,17 @@ const T2 = forwardRef(({
                         return <td
                           key={columnIndex + frozenColumns}
                           {...{ "data-column-id": columnIndex + frozenColumns, "data-item-type": "column" }}
-                          className={classNames(styles.Cell, styles.Head, headerRowClass, {
+                          className={classNames(styles.Cell, styles.Head, {
+                            [cellClass]: (showColumnAndRowLabels && rowIndex > 0),
+                            [headerRowClass]: ((rowIndex == 0 && !showColumnAndRowLabels) || (rowIndex == 1 && showColumnAndRowLabels) && !hideColumnHeaders),
+                            [addressCellClass]: (rowIndex == 0 && showColumnAndRowLabels),
                             [styles.PreventSelect]: focusedColumnOrRow?.type == "column"
                           })}
                           style={{
                             ...headerRowStyle,
                             width,
                             maxWidth: width,
+                            minWidth: width,
                             verticalAlign: "middle",
                             overflow: "hidden",
                           }}
@@ -150,22 +136,22 @@ const T2 = forwardRef(({
                             }
 
                             else if (focusedColumnOrRow?.index == columnIndex + frozenColumns - 1) {
-                              const element = columnRefs?.[columnIndex + frozenColumns - 1] as any as HTMLElement;
+                              const element = columnRefs?.[focusedColumnOrRow?.index] as any as HTMLElement;
                               if (element) {
                                 const index = parseInt(element.getAttribute("data-column-id") || "");
                                 const width = Math.abs(clientX - element.getBoundingClientRect().left);
                                 const newColWidths = { [index]: { width } }
-                                onColumnWidthsChanged && onColumnWidthsChanged(newColWidths);
+                                onColumnWidthsChanged(newColWidths);
                               }
                             }
 
                             else if (focusedColumnOrRow?.index == columnIndex + frozenColumns) {
-                              const element = columnRefs?.[columnIndex + frozenColumns] as any as HTMLElement;
+                              const element = columnRefs?.[focusedColumnOrRow?.index] as any as HTMLElement;
                               if (element) {
                                 const index = parseInt(element.getAttribute("data-column-id") || "");
                                 const width = Math.abs(clientX - element.getBoundingClientRect().left);
                                 const newColWidths = { [index]: { width } }
-                                onColumnWidthsChanged && onColumnWidthsChanged(newColWidths);
+                                onColumnWidthsChanged(newColWidths);
                               }
                             }
                           }}

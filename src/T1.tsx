@@ -6,10 +6,11 @@ import { publishResize } from './Utils';
 
 const T1 = forwardRef(({
   data = [],
+  addressCellClass = '',
   headerRowStyle = {},
+  cellClass = '',
   headerRowClass = '',
   showColumnAndRowLabels = false,
-  prefferedColumnLabelHeight = 40,
   colWidths,
   rowHeights,
   columnLabels,
@@ -88,7 +89,8 @@ const T1 = forwardRef(({
                   ...(height != "auto" && {
                     height,
                     minHeight: height,
-                    maxHeight: height
+                    maxHeight: height,
+                    overflow: 'hidden'
                   })
                 }}
               >
@@ -100,29 +102,33 @@ const T1 = forwardRef(({
                     // add the data columns
                     ...r?.filter((_r: any[], columnIndex: number) => columnIndex < actualFrozenColumns)
                   ]?.map((c: any, columnIndex: number) => {
-                    const width = colWidths?.[columnIndex]?.width || cols?.[columnIndex].width || "auto"
+                    const width = colWidths?.[columnIndex]?.width || cols?.[columnIndex]?.width || "auto"
                     return <td
                       key={columnIndex}
                       {...{ "data-column-id": columnIndex, "data-item-type": "column" }}
-                      className={classNames(styles.Cell, styles.Head, headerRowClass, {
+                      className={classNames(styles.Cell, styles.Head, {
+                        [cellClass]: true,
+                        [addressCellClass]: (rowIndex == 0 && showColumnAndRowLabels) || (rowIndex > 0 && columnIndex == 0 && showColumnAndRowLabels),
+                        [headerRowClass]: (rowIndex == 0 && !showColumnAndRowLabels) || (rowIndex == 1 && showColumnAndRowLabels),
                         [styles.PreventSelect]: ["row", "column"].includes(focusedColumnOrRow?.type || "")
                       })}
                       style={{
                         ...headerRowStyle,
                         width,
+                        minWidth: width,
+                        maxWidth: width,
                         verticalAlign: "middle",
                         ...
                         (
                           columnIndex == 0 ? {
-                            textAlign: "center",
-                            height: prefferedColumnLabelHeight
+                            textAlign: "center"
                           } : {}
                         )
                       }}
                       onMouseMove={({ currentTarget, clientX, clientY }) => {
                         const rect = currentTarget.getBoundingClientRect();
                         if (!focusedColumnOrRow) {
-                          if (rowIndex == 0) {
+                          if (rowIndex == 0 && !showColumnAndRowLabels) {
                             const isOverLeftBorder = clientX <= rect.left + 5; // Adjust tolerance as needed
 
                             if (isOverLeftBorder) {
@@ -130,7 +136,7 @@ const T1 = forwardRef(({
                             } else {
                               currentTarget.style.cursor = 'default'; // Reset to default cursor
                             }
-                          } else if (columnIndex == 0) {
+                          } else if (columnIndex == 0 && !showColumnAndRowLabels) {
                             const isOverLeftBorder = clientY <= rect.top + 5; // Adjust tolerance as needed
 
                             if (isOverLeftBorder) {

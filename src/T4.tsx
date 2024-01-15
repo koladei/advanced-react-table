@@ -1,7 +1,8 @@
-import { forwardRef, useImperativeHandle, useRef, RefObject } from 'react';
+import { forwardRef, useImperativeHandle, useRef, RefObject, useEffect } from 'react';
 import styles from "./Table.module.scss"
 import classNames from 'classnames';
-import { SubTableProps, TableProps } from './Types';
+import { CellDimensionCollection, SubTableProps, TableProps } from './Types';
+import { publishResize } from './Utils';
 
 const T4 = forwardRef(({
   headerRowStyle,
@@ -17,7 +18,8 @@ const T4 = forwardRef(({
   actualFrozenColumns,
   width = "100%",
   height = "100%",
-  onT4HorizontalScroll = () => { }
+  onT4HorizontalScroll = () => { },
+  onRowHeightsChanged = (_: CellDimensionCollection) => { }
 }: TableProps & SubTableProps & { onT4HorizontalScroll: (scrollPosition?: number) => void }, ref?: any) => {
   // refs
   const r = useRef(null);
@@ -26,6 +28,19 @@ const T4 = forwardRef(({
   if (!ref) {
     ref = r;
   }
+
+
+  useEffect(() => {
+    const observer = new ResizeObserver((_entries) => {
+      publishResize(t4Ref, onRowHeightsChanged);
+    });
+
+    if (t4Ref?.current) {
+      observer.observe(t4Ref?.current);
+    }
+
+    return () => observer.disconnect();
+  }, [t4Ref, t4Ref?.current]);
 
   useImperativeHandle(ref, () => ({
     get container(): HTMLElement {

@@ -8,14 +8,14 @@
   border: 1px solid #454545;
 
   .Header {
-    border: 1px solid #454545;
+    border: 1px solid #dcdcdc;
     border-style: none solid solid none;
-    box-shadow: 0.02em 0.02em 0.5em #efefef;
+    box-shadow: 0.02em 0.02em 0.5em red;
     background-color: #efefef;
   }
 
   .Cell {
-    border: 1px solid #efefef;
+    border: 1px solid #dcdcdc;
     box-shadow: 0.02em 0.02em 0.5em #efefef inset;
   }
 }

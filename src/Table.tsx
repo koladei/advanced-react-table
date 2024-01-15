@@ -28,9 +28,11 @@ const Table = ({
   freezeColumnHeaders = false,
   freezeFirstColumn = false,
   headerRowStyle = {},
+  headerColumnStyle = {},
   cellStyle = {},
   cellClass = '',
   headerRowClass = '',
+  addressCellClass = '',
   blankCellValue = '-',
   showColumnAndRowLabels = false,
   prefferedColumnLabelHeight = 40,
@@ -49,15 +51,19 @@ const Table = ({
   const t2Ref = useRef(null);
   const t3Ref = useRef(null);
 
-  const [topRowHeights, setTopRowHeights] = useState<Partial<CellDimension>[]>([]);
-  const [rowHeights, setRowHeights] = useState<Partial<CellDimension>[]>([]);
-  const [leftColWidths, setLeftColWidths] = useState<Partial<CellDimension>[]>([]);
+  const [topRowHeights, setTopRowHeights] = useState<Partial<CellDimension>[]>(showColumnAndRowLabels ? [{ height: prefferedColumnLabelHeight }] : []);
+  const [rowHeights, setRowHeights] = useState<Partial<CellDimension>[]>(showColumnAndRowLabels ? [{ height: prefferedColumnLabelHeight }] : []);
+  const [leftColWidths, setLeftColWidths] = useState<Partial<CellDimension>[]>(showColumnAndRowLabels ? [{ width: prefferedRowLabelWidth }] : []);
   const [colWidths, setColWidths] = useState<CellDimension[]>(showColumnAndRowLabels ? [{ width: prefferedColumnLabelHeight }] : []);
   const [frozenColumns, setFrozenColumns] = useState<number>(freezeColumns);
   const [frozenRows, setFrozenRows] = useState<number>(freezeRows);
   const [cols, setCols] = useState<Column[]>([]);
   const [columnLabels, setColumnLabels] = useState<string[]>([]);
   const [focusedColumnOrRow, setFocusedColumnOrRow] = useState<FocusedColumnInfo | undefined>(undefined);
+
+  if (!addressCellClass) {
+    addressCellClass = styles.AddressCell
+  }
 
 
   useEffect(() => {
@@ -132,9 +138,9 @@ const Table = ({
     })
   ];
 
-  useEffect(() => {
-    console.log(rowHeights)
-  }, [data, data.length]);
+  // useEffect(() => {
+  //   console.log(rowHeights)
+  // }, [data, data.length]);
 
   //set the frozen rows
   useEffect(() => {
@@ -201,8 +207,9 @@ const Table = ({
     }
   }
 
-  function onColWidthsChanged(_cWidths: CellDimensionCollection) {
+  function onColumnWidthsChanged(_cWidths: CellDimensionCollection) {
     const keys = Object.keys(_cWidths) as any as number[];
+
     if (keys.length > 0) {
       if (keys[0] < frozenColumns) {
         let widths = [...leftColWidths];
@@ -212,7 +219,7 @@ const Table = ({
 
         setLeftColWidths(widths);
       } else {
-        let widths = [...rowHeights];
+        let widths = [...colWidths];
         keys.forEach((k: any) => {
           widths[k] = _cWidths[k]
         });
@@ -223,10 +230,19 @@ const Table = ({
   }
 
   return (
-    <div className={classNames(styles.Table)} ref={topRef}>
+    <div ref={topRef} className={classNames(styles.Table)} style={{
+      // display: "flex",
+      // flexDirection: "column",
+      // overflow: "hidden",
+      // overflowY: "scroll"
+    }}>
       {
         (frozenRows > 0 || showColumnAndRowLabels) &&
-        <div className={classNames(styles.TableRow, styles.Row1)} style={{ display: 'flex' }} ref={row1Ref}>
+        <div ref={row1Ref} className={classNames(styles.TableRow, styles.Row1)} style={{
+          display: 'flex',
+          height: "auto",
+          minHeight: "fit-content"
+        }}>
           {
             (frozenColumns > 0 || showColumnAndRowLabels) &&
             <Fragment>
@@ -237,8 +253,10 @@ const Table = ({
                   frozenRows,
                   hideColumnHeaders,
                   headerRowStyle,
+                  headerColumnStyle,
                   cellStyle,
                   cellClass,
+                  addressCellClass,
                   headerRowClass,
                   blankCellValue,
                   showColumnAndRowLabels,
@@ -256,7 +274,7 @@ const Table = ({
                   columnRefs: [...((t1Ref as any)?.current?.columnRefs || []), ...((t2Ref as any)?.current?.columnRefs || [])],
                   rowRefs: [...((t1Ref as any)?.current?.rowRefs || []), ...((t3Ref as any)?.current?.rowRefs || [])],
                   onRowHeightsChanged,
-                  onColWidthsChanged,
+                  onColumnWidthsChanged,
                   focusedColumnOrRow,
                   setFocusedColumnOrRow: (focusedColumnOrRow: any) => setFocusedColumnOrRow(focusedColumnOrRow)
                 }}
@@ -269,8 +287,10 @@ const Table = ({
                   frozenRows,
                   hideColumnHeaders,
                   headerRowStyle,
+                  headerColumnStyle,
                   cellStyle,
                   cellClass,
+                  addressCellClass,
                   headerRowClass,
                   blankCellValue,
                   showColumnAndRowLabels,
@@ -287,7 +307,7 @@ const Table = ({
                   shift,
                   columnRefs: [...((t1Ref as any)?.current?.columnRefs || []), ...((t2Ref as any)?.current?.columnRefs || [])],
                   onRowHeightsChanged,
-                  onColWidthsChanged,
+                  onColumnWidthsChanged,
                   ...((t1Ref?.current as any)?.table && { width: `calc(100% - ${(t1Ref?.current as any)?.table?.getBoundingClientRect().width}px)` }),
                   focusedColumnOrRow,
                   setFocusedColumnOrRow: (focusedColumnOrRow: any) => setFocusedColumnOrRow(focusedColumnOrRow),
@@ -299,15 +319,22 @@ const Table = ({
       }
       <div ref={row2Ref} className={classNames(styles.TableRow, styles.Row2)} style={{
         minHeight: `calc(100% - ${(row1Ref?.current as any)?.getBoundingClientRect().height || 0}px)`,
-        display: "flex"
+        display: "flex",
+        maxWidth: "100%",
+        width: (row1Ref?.current as any)?.getBoundingClientRect()?.width,
+        minWidth: (row1Ref?.current as any)?.getBoundingClientRect()?.width,
+        overflow: "hidden",
+        overflowY: "scroll"
       }}>
         <T3
           ref={t3Ref}
           {...{
             hideColumnHeaders,
             headerRowStyle,
+            headerColumnStyle,
             cellStyle,
             cellClass,
+            addressCellClass,
             headerRowClass,
             blankCellValue,
             showColumnAndRowLabels,
@@ -328,7 +355,7 @@ const Table = ({
             rowRefs: [...((t1Ref as any)?.current?.rowRefs || []), ...((t3Ref as any)?.current?.rowRefs || [])],
             // columnRefs: [...((t3Ref as any)?.current?.rowRefs || []), ...((t3Ref as any)?.current?.rowRefs || [])],
             onRowHeightsChanged,
-            onColWidthsChanged,
+            onColumnWidthsChanged,
             focusedColumnOrRow,
             setFocusedColumnOrRow: (focusedColumnOrRow?: FocusedColumnInfo) => setFocusedColumnOrRow(focusedColumnOrRow),
           }}
@@ -341,8 +368,10 @@ const Table = ({
               frozenRows,
               hideColumnHeaders,
               headerRowStyle,
+              headerColumnStyle,
               cellStyle,
               cellClass,
+              addressCellClass,
               headerRowClass,
               blankCellValue,
               showColumnAndRowLabels,
@@ -356,13 +385,13 @@ const Table = ({
               actualFrozenColumns,
               actualFrozenRows,
               columnLabels,
-              width: (t1Ref?.current as any)?.table?.getBoundingClientRect()?.width,
+              width: `calc(100% - ${(t1Ref?.current as any)?.table?.getBoundingClientRect()?.width}px)`,
               shift,
               onT4HorizontalScroll: (position) => {
                 (t2Ref?.current as any)?.container?.scrollTo(position, 0);
               },
               onRowHeightsChanged,
-              onColWidthsChanged,
+              onColumnWidthsChanged,
               focusedColumnOrRow,
               setFocusedColumnOrRow: (focusedColumnOrRow: any) => setFocusedColumnOrRow(focusedColumnOrRow)
             }}
